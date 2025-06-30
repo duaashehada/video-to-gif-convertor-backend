@@ -42,7 +42,9 @@ app.post('/convert', upload.single('video'), (req, res) => {
                 .on('end', () => {
                     fs.unlinkSync(inputPath);
                     fs.unlinkSync(tempPalette);
-                    res.json({ gifUrl: `http://localhost:${port}/${outputName}` });
+                    // res.json({ gifUrl: `http://localhost:${port}/${outputName}` });
+                    res.json({ gifUrl: `${req.protocol}://${req.get('host')}/${outputName}` });
+
                 })
                 .on('error', (err) => {
                     fs.unlinkSync(inputPath);
@@ -54,6 +56,6 @@ app.post('/convert', upload.single('video'), (req, res) => {
             fs.unlinkSync(inputPath);
             res.status(500).send('Palette generation error: ' + err.message);
         });
-});
+});x
 
 app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
