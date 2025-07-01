@@ -1,4 +1,3 @@
-
 const express = require('express');
 const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
@@ -7,22 +6,37 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 
+// Set FFmpeg binary path
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Railway uses dynamic ports
 
+// Middlewares
 app.use(cors());
 app.use(express.static('public'));
 
+// Multer setup
 const upload = multer({ dest: 'uploads/' });
 
+// Endpoint to convert video to GIF
 app.post('/convert', upload.single('video'), (req, res) => {
-    const { fps = 10, scale = '1200:-1' } = req.body;
-    const inputPath = req.file.path;
+    const fps = parseInt(req.body.fps) || 10;
+    const scale = req.body.scale || '1200:-1';
+
+    const inputPath = req.file?.path;
     const tempPalette = `${Date.now()}-palette.png`;
     const outputName = `${Date.now()}.gif`;
     const outputPath = path.join(__dirname, 'public', outputName);
+
+    // Debug logs
+    console.log('📥 File received:', req.file);
+    console.log('🎞 FPS:', fps);
+    console.log('📐 Scale:', scale);
+
+    if (!inputPath) {
+        return res.status(400).send('No video file provided.');
+    }
 
     // Step 1: Generate palette
     ffmpeg(inputPath)
@@ -40,22 +54,34 @@ app.post('/convert', upload.single('video'), (req, res) => {
                 .outputOptions(['-loop 0'])
                 .save(outputPath)
                 .on('end', () => {
-                    fs.unlinkSync(inputPath);
-                    fs.unlinkSync(tempPalette);
-                    // res.json({ gifUrl: `http://localhost:${port}/${outputName}` });
+                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                    if (fs.existsSync(tempPalette)) fs.unlinkSync(tempPalette);
                     res.json({ gifUrl: `${req.protocol}://${req.get('host')}/${outputName}` });
-
                 })
                 .on('error', (err) => {
-                    fs.unlinkSync(inputPath);
-                    fs.unlinkSync(tempPalette);
+                    console.error('❌ FFmpeg error:', err.message);
+                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                    if (fs.existsSync(tempPalette)) fs.unlinkSync(tempPalette);
                     res.status(500).send('FFmpeg error: ' + err.message);
                 });
         })
         .on('error', (err) => {
-            fs.unlinkSync(inputPath);
+            console.error('❌ Palette generation error:', err.message);
+            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             res.status(500).send('Palette generation error: ' + err.message);
         });
 });
 
-app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
+// FFmpeg test route (optional)
+app.get('/ffmpeg-check', (req, res) => {
+    const { exec } = require('child_process');
+    exec('ffmpeg -version', (err, stdout, stderr) => {
+        if (err) return res.status(500).send('FFmpeg not working');
+        res.send(stdout);
+    });
+});
+
+// Start server
+app.listen(port, () => {
+    console.log(`🚀 Server running at http://localhost:${port}`);
+});
