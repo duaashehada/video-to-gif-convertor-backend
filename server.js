@@ -85,10 +85,16 @@ app.get('/ffmpeg-check', (req, res) => {
     });
 });
 
+app.get('/', (req, res) => {
+    res.send('✅ Video-to-GIF Converter is running!');
+});
+
 // Start server
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server running at http://localhost:${port}`);
 });
+
+
 // app.listen(port, () => {
 //     console.log(`🚀 Server running at http://localhost:${port}`);
 // });
