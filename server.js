@@ -24,10 +24,14 @@ app.post('/convert', upload.single('video'), (req, res) => {
     const fps = parseInt(req.body.fps) || 10;
     const scale = req.body.scale || '1200:-1';
 
+
+
     const inputPath = req.file?.path;
     const tempPalette = `${Date.now()}-palette.png`;
     const outputName = `${Date.now()}.gif`;
     const outputPath = path.join(__dirname, 'public', outputName);
+
+    console.log(fps ,scale , inputPath , tempPalette , outputName , outputPath );
 
     // Debug logs
     console.log('📥 File received:', req.file);
